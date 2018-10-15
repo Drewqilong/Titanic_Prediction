@@ -9,6 +9,7 @@ This is a temporary script file.
 import pandas as pd
 import IPython.display as iplay
 import category
+import outliers
 
 train = pd.read_csv('input/train.csv')
 test = pd.read_csv('input/test.csv')
@@ -60,4 +61,6 @@ merged.Ticket = ticket
 #iplay.display(merged.Ticket.value_counts())
 
 merged.Ticket = merged.Ticket.apply( lambda x : x[0])
-absolute_and_relative_freq(merged.Ticket)
+#absolute_and_relative_freq(merged.Ticket)
+
+outliers.outliers(merged.Age)
