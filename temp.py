@@ -8,15 +8,29 @@ This is a temporary script file.
 
 import pandas as pd
 import IPython.display as iplay
-#import missingno as mn           # For visualizing missing values.
+import missingno as mn           # For visualizing missing values.
 import matplotlib.pyplot as plt  # For 2D visualization
 import seaborn as sns   
+from scipy import stats          # For statistics
 import category
 import outliers
 
 def bold(string):
     display(iplay.Markdown(string))
     
+''' #1.Function for displaying bar labels in absolute scale.'''
+def abs_bar_labels():
+    font_size = 15
+    plt.ylabel('Absolute Frequency', fontsize = font_size)
+    plt.xticks(rotation = 0, fontsize = font_size)
+    plt.yticks([])
+    
+    # Set individual bar lebels in absolute number
+    for x in ax.patches:
+        ax.annotate(x.get_height(), 
+        (x.get_x() + x.get_width()/2., x.get_height()), ha = 'center', va = 'center', xytext = (0, 7), 
+        textcoords = 'offset points', fontsize = font_size, color = 'black')
+        
 train = pd.read_csv('input/train.csv')
 test = pd.read_csv('input/test.csv')
 #Merge the train and test dataset
@@ -105,12 +119,12 @@ correlation = correlation.agg(LabelEncoder().fit_transform)
 correlation['Age'] = merged.Age # Inserting Age in variable correlation.
 correlation = correlation.set_index('Age').reset_index() # Move Age at index 0.
 
-print(correlation.corr())
+#print(correlation.corr())
 '''Now create the heatmap correlation.'''
-plt.figure(figsize = (20,7))
-sns.heatmap(correlation.corr(), cmap ='BrBG', annot = True)
-plt.title('Variables Correlated with Age', fontsize = 18)
-plt.show()
+#plt.figure(figsize = (20,7))
+#sns.heatmap(correlation.corr(), cmap ='BrBG', annot = True)
+#plt.title('Variables Correlated with Age', fontsize = 18)
+#plt.show()
 
 
 '''Impute Age with median of respective columns (i.e., Title and Pclass).'''
@@ -118,4 +132,112 @@ merged.Age = merged.groupby(['Title', 'Pclass'])['Age'].transform(lambda x: x.fi
 
 '''So by now we should have variables with no missing values.'''
 #iplay.display(merged.isnull().sum())
+
+
+
+
+
+
+"""Let's split the train and test data for bivariate analysis since test data has no Survived values. We need our target variable without missing values to conduct the association test with predictor variables."""
+df_train = merged.iloc[:891, :]
+df_test = merged.iloc[891:, :]
+df_test = df_test.drop(columns = ['Survived'], axis = 1)
+
+#"""Create a boxplot to view the variables correlated with Survivied. First extract the variables we're interested in."""
+#correlation = df_train.loc[:, ['Fare', 'Age', 'Sex', 'Pclass', 'Embarked', 'Title', 'Family_size', 'Parch', 'SibSp', 'Cabin', 'Ticket']]
+#
+#"""Let's plot correlation heatmap to see which variable is highly correlated with Survived and if our boxplot interpretation holds true. We need to convert categorical variable into numerical to plot correlation heatmap. So convert categorical variables into numerical."""
+#from sklearn.preprocessing import LabelEncoder
+#correlation = correlation.agg(LabelEncoder().fit_transform)
+#correlation['Survived'] = df_train.Survived # Inserting Age in variable correlation.
+#correlation = correlation.set_index('Survived').reset_index() # Move Age at index 0.
+#
+##print(correlation.corr())
+#'''Now create the heatmap correlation.'''
+#plt.figure(figsize = (20,7))
+#sns.heatmap(correlation.corr(), cmap ='BrBG', annot = True)
+#plt.title('Variables Correlated with Survived', fontsize = 18)
+#plt.show()
+
+'''#1.Create a function that creates boxplot between categorical and numerical variables and calculates biserial correlation.'''
+def boxplot_and_correlation(cat,num):
+    '''cat = categorical variable, and num = numerical variable.'''
+    plt.figure(figsize = (18,7))
+    title_size = 18
+    font_size = 15
+    ax = sns.boxplot(x = cat, y = num)
+    
+    # Select boxes to change the color
+    box = ax.artists[0]
+    box1 = ax.artists[1]
+    
+    # Change the appearance of that box
+    box.set_facecolor('red')
+    box1.set_facecolor('green')
+    plt.title('Association between Survived & %s' %num.name, fontsize = title_size)
+    plt.xlabel('%s' %cat.name, fontsize = font_size)
+    plt.ylabel('%s' %num.name, fontsize = font_size)
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
+    plt.show()
+    print('Correlation between', num.name, 'and', cat.name,':', stats.pointbiserialr(num, cat))
+
+'''#2.Create another function to calculate mean when grouped by categorical variable. And also plot the grouped mean.'''
+def nume_grouped_by_cat(num, cat):
+    global ax
+    font_size = 15
+    title_size = 18
+    grouped_by_cat = num.groupby(cat).mean().sort_values( ascending = False)
+    grouped_by_cat.rename ({1:'survived', 0:'died'}, axis = 'rows', inplace = True) # Renaming index
+    grouped_by_cat = round(grouped_by_cat, 2)
+    ax = grouped_by_cat.plot.bar(figsize = (18,5)) 
+    abs_bar_labels()
+    plt.title('Mean %s ' %num.name + ' of Survivors vs Victims', fontsize = title_size)
+    plt.ylabel('Mean ' + '%s' %num.name, fontsize = font_size)
+    plt.xlabel('%s' %cat.name, fontsize = font_size)
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
+    plt.show()
+    
+'''#3.This function plots histogram of numerical variable for every class of categorical variable.'''
+def num_hist_by_cat(num,cat):
+    font_size = 15
+    title_size = 18
+    plt.figure(figsize = (18,7))
+    num[cat == 1].hist(color = ['g'], label = 'Survived', grid = False)
+    num[cat == 0].hist(color = ['r'], label = 'Died', grid = False)
+    plt.yticks([])
+    plt.xticks(fontsize = font_size)
+    plt.xlabel('%s' %num.name, fontsize = font_size)
+    plt.title('%s ' %num.name + ' Distribution of Survivors vs Victims', fontsize = title_size)
+    plt.legend()
+    plt.show()
+    
+'''#4.Create a function to calculate anova between numerical and categorical variable.'''
+def anova(num, cat):
+    from scipy import stats
+    grp_num_by_cat_1 = num[cat == 1] # Group our numerical variable by categorical variable(1). Group Fair by survivors
+    grp_num_by_cat_0 = num[cat == 0] # Group our numerical variable by categorical variable(0). Group Fare by victims
+    f_val, p_val = stats.f_oneway(grp_num_by_cat_1, grp_num_by_cat_0) # Calculate f statistics and p value
+    print('Anova Result between ' + num.name, ' & '+ cat.name, ':' , f_val, p_val)  
+    
+'''#5.Create another function that calculates Tukey's test between our nemurical and categorical variable.'''
+def tukey_test(num, cat):
+    from statsmodels.stats.multicomp import pairwise_tukeyhsd
+    tukey = pairwise_tukeyhsd(endog = num,   # Numerical data
+                             groups = cat,   # Categorical data
+                             alpha = 0.05)   # Significance level
+    
+    summary = tukey.summary()   # See test summary
+    print("Tukey's Test Result between " + num.name, ' & '+ cat.name, ':' )  
+    iplay.display(summary)    
+    
+'''Create a boxplot to visualize the strength of association of Survived with Fare. Also calculate biserial correlation.'''
+#boxplot_and_correlation(df_train.Survived, df_train.Fare)
+
+'''So the mean fare of survivors should be much more (positive correlation or boxplot interpretation) than those who died. Calculate mean fare paid by the survivors as well as by the victims.'''
+#nume_grouped_by_cat(df_train.Fare, df_train.Survived)
+
+"""Plot histogram of survivor's vs victims fare."""
+num_hist_by_cat(df_train.Fare, df_train.Survived)
 
