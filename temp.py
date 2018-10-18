@@ -30,6 +30,19 @@ def abs_bar_labels():
         ax.annotate(x.get_height(), 
         (x.get_x() + x.get_width()/2., x.get_height()), ha = 'center', va = 'center', xytext = (0, 7), 
         textcoords = 'offset points', fontsize = font_size, color = 'black')
+       
+'''#2.Function for displaying bar lebels in relative scale.'''
+def pct_bar_labels():
+    font_size = 15
+    plt.ylabel('Relative Frequency (%)', fontsize = font_size)
+    plt.xticks(rotation = 0, fontsize = font_size)
+    plt.yticks([]) 
+    
+    # Set individual bar lebels in proportional scale
+    for x in ax1.patches:
+        ax1.annotate(str(x.get_height()) + '%', 
+        (x.get_x() + x.get_width()/2., x.get_height()), ha = 'center', va = 'center', xytext = (0, 7), 
+        textcoords = 'offset points', fontsize = font_size, color = 'black')
         
 train = pd.read_csv('input/train.csv')
 test = pd.read_csv('input/test.csv')
@@ -159,6 +172,8 @@ df_test = df_test.drop(columns = ['Survived'], axis = 1)
 #plt.title('Variables Correlated with Survived', fontsize = 18)
 #plt.show()
 
+''' CorrelBivariate Analysis        '''
+''' Numerical & Categorical Variables '''
 '''#1.Create a function that creates boxplot between categorical and numerical variables and calculates biserial correlation.'''
 def boxplot_and_correlation(cat,num):
     '''cat = categorical variable, and num = numerical variable.'''
@@ -230,7 +245,7 @@ def tukey_test(num, cat):
     
     summary = tukey.summary()   # See test summary
     print("Tukey's Test Result between " + num.name, ' & '+ cat.name, ':' )  
-    iplay.display(summary)    
+    print(summary)
     
 '''Create a boxplot to visualize the strength of association of Survived with Fare. Also calculate biserial correlation.'''
 #boxplot_and_correlation(df_train.Survived, df_train.Fare)
@@ -239,5 +254,106 @@ def tukey_test(num, cat):
 #nume_grouped_by_cat(df_train.Fare, df_train.Survived)
 
 """Plot histogram of survivor's vs victims fare."""
-num_hist_by_cat(df_train.Fare, df_train.Survived)
+#num_hist_by_cat(df_train.Fare, df_train.Survived)
 
+"""Let's perform ANOVA between Fare and Survived. One can omit this step. I perform just to show how anova is performed if there were more than two groups in our categorical variable."""
+#anova(df_train.Fare, df_train.Survived)
+
+"""Perform Tukey's test using pairwise_tukeyhsd() function. One can omit Anova and Tukey's test for categorical variable less than three levels by performing biserial correlation."""
+#tukey_test(df_train.Fare, df_train.Survived)
+
+"""Let's create a box plot between Age and Survived to have an idea by how much Age is associated with Survived. Also find point biserial correlation between them."""
+#boxplot_and_correlation(df_train.Survived, df_train.Age)
+
+'''So the mean age of survivors should be just less than those who died (small negative correlation and reading boxplot). Calculate the mean age of survivors and victims.'''
+#nume_grouped_by_cat(df_train.Age, df_train.Survived)
+
+'''Histogram of survivors vs victims age.'''
+#num_hist_by_cat(df_train.Age, df_train.Survived)
+
+'''Perform ANOVA between all the levels of Survived (i.e.., 0 and 1) and Age.'''
+#anova(df_train.Age, df_train.Survived)
+
+'''Categorical & Categorical Variables '''
+'''#1.Create a function that calculates absolute and relative frequency of Survived variable by a categorical variable. And then plots the absolute and relative frequency of Survived by a categorical variable.'''
+def crosstab(cat, cat_target):
+    '''cat = categorical variable, cat_target = our target categorical variable.'''
+    global ax, ax1
+    fig_size = (18, 5)
+    title_size = 18
+    font_size = 15
+    cat_grouped_by_cat_target = pd.crosstab(index = cat, columns = cat_target)
+    cat_grouped_by_cat_target.rename({0:'Victims', 1:'Survivors'}, axis = 'columns', inplace = True)  # Renaming the columns
+    pct_cat_grouped_by_cat_target = round(pd.crosstab(index = cat, columns = cat_target, normalize = 'index')*100, 2)
+    pct_cat_grouped_by_cat_target.rename({0:'Victims(%)', 1:'Survivors(%)'}, axis = 'columns', inplace = True)
+    
+    # Plot absolute frequency of Survived by a categorical variable
+    ax =  cat_grouped_by_cat_target.plot.bar(color = ['r', 'g'], title = 'Absolute Count of Survival and Death by %s' %cat.name, figsize = fig_size)
+    ax.title.set_size(fontsize = title_size)
+    abs_bar_labels()
+    plt.xlabel(cat.name, fontsize = font_size)
+    plt.show()
+    
+    # Plot relative frequrncy of Survived by a categorical variable
+    ax1 = pct_cat_grouped_by_cat_target.plot.bar(color = ['r', 'g'], title = 'Percentage Count of Survival and Death by %s' %cat.name, figsize = fig_size)
+    ax1.title.set_size(fontsize = title_size)
+    pct_bar_labels()
+    plt.xlabel(cat.name, fontsize = font_size)
+    plt.show()
+    
+'''#2.Create a function to calculate chi_square test between a categorical and target categorical variable.'''
+def chi_square(cat, cat_target):
+    cat_grouped_by_cat_target = pd.crosstab(index = cat, columns = cat_target)
+    test_result = stats.chi2_contingency (cat_grouped_by_cat_target)
+    print('Chi Square Test Result between Survived & %s' %cat.name + ':')
+    print(test_result)
+
+'''#3.Finally create another function to calculate Bonferroni-adjusted pvalue for a categorical and target categorical variable.'''
+def bonferroni_adjusted(cat, cat_target):
+    dummies = pd.get_dummies(cat)
+    for columns in dummies:
+        crosstab = pd.crosstab(dummies[columns], cat_target)
+        print(stats.chi2_contingency(crosstab))
+    print('\nColumns:', dummies.columns)
+
+'''Plot the no of passergers who survived and died due to their sex in absolute and relative scale.'''
+#crosstab(df_train.Sex, df_train.Survived)
+
+'''Perform chi-square test of independence between Survived and Sex.'''
+#chi_square(df_train.Sex, df_train.Survived)
+
+'''Plot the number of passengers who survived and died due to their pclass in absolute and relative scale.'''
+#crosstab(df_train.Pclass, df_train.Survived)
+
+'''Perform chi-square test of independence between Survived and Pclass.'''
+#chi_square(df_train.Pclass, df_train.Survived)
+
+'''Calculate Bonferroni-adjusted pvalue for Pclass (1,2,3) and Survived.'''
+#bonferroni_adjusted(df_train.Pclass, df_train.Survived)
+
+'''Count and plot the survivors and victims by place of embarkation in absolute and relative scale.'''
+#crosstab(df_train.Embarked, df_train.Survived)
+
+'''Now perform chi-square test to find the association between Embarked and Survived.'''
+#chi_square(df_train.Embarked, df_train.Survived)
+
+'''Calculate Bonferroni-adjusted pvalue  between Embarked (C,Q,S one by one) and Survived.'''
+#bonferroni_adjusted(df_train.Embarked, df_train.Survived)
+
+'''Multivariate Analysis'''
+'''Create a function that plots the impact of 3 predictor variables at a time on a target variable.'''
+def multivariate_analysis(cat1, cat2, cat3, cat_target):
+    font_size = 15
+    grouped = round(pd.crosstab(index = [cat1, cat2, cat3], columns = cat_target, normalize = 'index')*100, 2)
+    grouped.rename({0:'Died%', 1:'Survived%'}, axis = 1, inplace = True)
+    grouped.plot.bar(color = ['r', 'g'], figsize = (18,5))
+    plt.xlabel(cat1.name + ',' + cat2.name + ',' + cat3.name, fontsize = font_size)
+    plt.ylabel('Relative Frequency (%)', fontsize = font_size)
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
+    plt.legend(loc = 'best')
+    plt.show()
+    
+'''Proportion of survivors and victims due to pclass, sex, and cabin.'''
+#multivariate_analysis(df_train.Pclass, df_train.Sex, df_train.Cabin, df_train.Survived)
+#bold('**Findings: Sex male seems to be deciding factor for death.**')
