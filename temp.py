@@ -12,6 +12,7 @@ import missingno as mn           # For visualizing missing values.
 import matplotlib.pyplot as plt  # For 2D visualization
 import seaborn as sns   
 from scipy import stats          # For statistics
+import numpy as np
 import category
 import outliers
 
@@ -357,3 +358,155 @@ def multivariate_analysis(cat1, cat2, cat3, cat_target):
 '''Proportion of survivors and victims due to pclass, sex, and cabin.'''
 #multivariate_analysis(df_train.Pclass, df_train.Sex, df_train.Cabin, df_train.Survived)
 #bold('**Findings: Sex male seems to be deciding factor for death.**')
+
+'''Data Transformation '''
+'''Create bin categories for Age.'''
+label_names = ['infant','child','teenager','young_adult','adult','aged']
+
+'''Create range for each bin categories of Age.'''
+cut_points = [0,5,12,18,35,60,81]
+
+'''Create and view categorized Age with original Age.'''
+merged['Age_binned'] = pd.cut(merged.Age, cut_points, labels = label_names)
+bold('**Age with Categorized Age:**')
+#print(merged[['Age', 'Age_binned']].head())
+
+'''Create bin categories for Fare.'''
+groups = ['low','medium','high','very_high']
+
+'''Create range for each bin categories of Fare.'''
+cut_points = [-1, 130, 260, 390, 520]
+
+'''Create and view categorized Fare with original Fare.'''
+merged['Fare_binned'] = pd.cut(merged.Fare, cut_points, labels = groups)
+bold('**Fare with Categorized Fare:**')
+#print(merged[['Fare', 'Fare_binned']].head(2))
+
+"""Let's see all the variables we currently have with their category."""
+#print(merged.head(2))
+
+'''Drop the features that would not be useful anymore.'''
+merged.drop(columns = ['Name', 'Age', 'Fare'], inplace = True, axis = 1)
+
+'''Features after dropping.'''
+bold('**Features Remaining after Dropping:**')
+#print(merged.columns)
+
+
+'''Correcting data types, converting into categorical variables.'''
+merged.loc[:, ['Pclass', 'Sex', 'Embarked', 'Cabin', 'Title', 'Family_size', 'Ticket']] = merged.loc[:, ['Pclass', 'Sex', 'Embarked', 'Cabin', 'Title', 'Family_size', 'Ticket']].astype('category')
+
+'''Due to merging there are NaN values in Survived for test set observations.'''
+merged.Survived = merged.Survived.dropna().astype('int')#Converting without dropping NaN throws an error.
+
+'''Check if data types have been corrected.'''
+bold('**Data Types after Correction:**')
+#print(merged.dtypes)
+
+
+
+'''Model Building and Evaluation, Training Model!!!'''
+
+'''Convert categorical data into numeric to feed our machine learning model.'''
+merged = pd.get_dummies(merged)
+
+"""Let's visualize the updated dataset that would be fed to our machine learning algorithms."""
+bold('**Preview of Processed Data:**')
+print(merged.head(2))
+
+'''Set a seed for reproducibility'''
+seed = 43
+
+"""Let's split the train and test set to feed machine learning algorithm."""
+df_train = merged.iloc[:891, :]
+df_test  = merged.iloc[891:, :]
+
+'''Drop passengerid from train set and Survived from test set.'''
+df_train = df_train.drop(columns = ['PassengerId'], axis = 1)
+df_test = df_test.drop(columns = ['Survived'], axis = 1)
+
+'''Extract data sets as input and output for machine learning models.'''
+X_train = df_train.drop(columns = ['Survived'], axis = 1) # Input matrix as pandas dataframe (dim:891*47).
+y_train = df_train['Survived'] # Output vector as pandas series (dim:891*1)
+
+"""Extract test set"""
+X_test  = df_test.drop("PassengerId", axis = 1).copy()
+
+'''See the dimensions of input and output data set.'''
+print('Input Matrix Dimension:  ', X_train.shape)
+print('Output Vector Dimension: ', y_train.shape)
+print('Test Data Dimension:     ', X_test.shape)
+
+
+"""Building machine learning models: 
+We will try 10 different classifiers to find the best classifier after tunning model's hyperparameters that will best generalize the unseen(test) data."""
+
+'''Now initialize all the classifiers object.'''
+'''#1.Logistic Regression'''
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+
+'''#2.Support Vector Machines'''
+from sklearn.svm import SVC
+svc = SVC(gamma = 'auto')
+
+'''#3.Random Forest Classifier'''
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier(random_state = seed, n_estimators = 100)
+
+'''#4.KNN'''
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+
+'''#5.Gaussian Naive Bayes'''
+from sklearn.naive_bayes import GaussianNB
+gnb = GaussianNB()
+
+'''#6.Decision Tree Classifier'''
+from sklearn.tree import DecisionTreeClassifier
+dt = DecisionTreeClassifier(random_state = seed)
+
+'''#7.Gradient Boosting Classifier'''
+from sklearn.ensemble import GradientBoostingClassifier
+gbc = GradientBoostingClassifier(random_state = seed)
+
+'''#8.Adaboost Classifier'''
+from sklearn.ensemble import AdaBoostClassifier
+abc = AdaBoostClassifier(random_state = seed)
+
+'''#9.ExtraTrees Classifier'''
+from sklearn.ensemble import ExtraTreesClassifier
+etc = ExtraTreesClassifier(random_state = seed)
+
+'''#10.Extreme Gradient Boosting'''
+from xgboost import XGBClassifier
+xgbc = XGBClassifier(random_state = seed)
+
+'''Create a function that returns train accuracy of different models.'''
+def train_accuracy(model):
+    model.fit(X_train, y_train)
+    train_accuracy = model.score(X_train, y_train)
+    train_accuracy = np.round(train_accuracy*100, 2)
+    return train_accuracy
+
+
+'''Models with best training accuracy:'''
+train_accuracy = pd.DataFrame({'Train_accuracy(%)':[train_accuracy(lr), train_accuracy(svc), train_accuracy(rf), train_accuracy(knn), train_accuracy(gnb), train_accuracy(dt), train_accuracy(gbc), train_accuracy(abc), train_accuracy(etc), train_accuracy(xgbc)]})
+train_accuracy.index = ['LR', 'SVC', 'RF', 'KNN', 'GNB', 'DT', 'GBC', 'ABC', 'ETC', 'XGBC']
+sorted_train_accuracy = train_accuracy.sort_values(by = 'Train_accuracy(%)', ascending = False)
+bold('**Training Accuracy of the Classifiers:**')
+#print(sorted_train_accuracy)
+
+'''Create a function that returns mean cross validation score for different models.'''
+def x_val_score(model):
+    from sklearn.model_selection import cross_val_score
+    x_val_score = cross_val_score(model, X_train, y_train, cv = 10, scoring = 'accuracy').mean()
+    x_val_score = np.round(x_val_score*100, 2)
+    return x_val_score
+
+"""Let's perform k-fold (k=10) cross validation to find the classifier with the best cross validation accuracy."""
+x_val_score = pd.DataFrame({'X_val_score(%)':[x_val_score(lr), x_val_score(svc), x_val_score(rf), x_val_score(knn), x_val_score(gnb), x_val_score(dt), x_val_score(gbc), x_val_score(abc), x_val_score(etc), x_val_score(xgbc)]})
+x_val_score.index = ['LR', 'SVC', 'RF', 'KNN', 'GNB', 'DT', 'GBC', 'ABC', 'ETC', 'XGBC']
+sorted_x_val_score = x_val_score.sort_values(by = 'X_val_score(%)', ascending = False) 
+bold('**Models 10-fold Cross Validation Score:**')
+print(sorted_x_val_score)
