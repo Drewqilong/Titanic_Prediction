@@ -510,3 +510,82 @@ x_val_score.index = ['LR', 'SVC', 'RF', 'KNN', 'GNB', 'DT', 'GBC', 'ABC', 'ETC',
 sorted_x_val_score = x_val_score.sort_values(by = 'X_val_score(%)', ascending = False) 
 bold('**Models 10-fold Cross Validation Score:**')
 print(sorted_x_val_score)
+
+'''Turn hyperparameters'''
+
+
+"""Define all the models' hyperparameters one by one first::"""
+
+'''Define hyperparameters the logistic regression will be tuned with. For LR, the following hyperparameters are usually tunned.'''
+lr_params = {'penalty':['l1', 'l2'],
+             'C': np.logspace(0, 4, 10)}
+
+'''For GBC, the following hyperparameters are usually tunned.'''
+gbc_params = {'learning_rate': [0.01, 0.02, 0.05, 0.01],
+              'max_depth': [4, 6, 8],
+              'max_features': [1.0, 0.3, 0.1], 
+              'min_samples_split': [ 2, 3, 4],
+              'random_state':[seed]}
+
+'''For SVC, the following hyperparameters are usually tunned.'''
+svc_params = {'C': [6, 7, 8, 9, 10, 11, 12], 
+              'kernel': ['linear','rbf'],
+              'gamma': [0.5, 0.2, 0.1, 0.001, 0.0001]}
+
+'''For DT, the following hyperparameters are usually tunned.'''
+dt_params = {'max_features': ['auto', 'sqrt', 'log2'],
+             'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 
+             'min_samples_leaf':[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+             'random_state':[seed]}
+
+'''For RF, the following hyperparameters are usually tunned.'''
+rf_params = {'criterion':['gini','entropy'],
+             'n_estimators':[10, 15, 20, 25, 30],
+             'min_samples_leaf':[1, 2, 3],
+             'min_samples_split':[3, 4, 5, 6, 7], 
+             'max_features':['sqrt', 'auto', 'log2'],
+             'random_state':[44]}
+
+'''For KNN, the following hyperparameters are usually tunned.'''
+knn_params = {'n_neighbors':[3, 4, 5, 6, 7, 8],
+              'leaf_size':[1, 2, 3, 5],
+              'weights':['uniform', 'distance'],
+              'algorithm':['auto', 'ball_tree','kd_tree','brute']}
+
+'''For ABC, the following hyperparameters are usually tunned.'''
+abc_params = {'n_estimators':[1, 5, 10, 15, 20, 25, 40, 50, 60, 80, 100, 130, 160, 200, 250, 300],
+              'learning_rate':[0.0001, 0.001, 0.01, 0.1, 0.2, 0.3,1.5],
+              'random_state':[seed]}
+
+'''For ETC, the following hyperparameters are usually tunned.'''
+etc_params = {'max_depth':[None],
+              'max_features':[1, 3, 10],
+              'min_samples_split':[2, 3, 10],
+              'min_samples_leaf':[1, 3, 10],
+              'bootstrap':[False],
+              'n_estimators':[100, 300],
+              'criterion':["gini"], 
+              'random_state':[seed]}
+
+'''For XGBC, the following hyperparameters are usually tunned.'''
+xgbc_params = {'n_estimators': (150, 250, 350,450,550,650, 700, 800, 850, 1000),
+              'learning_rate': (0.01, 0.6),
+              'subsample': (0.3, 0.9),
+              'max_depth': [3, 4, 5, 6, 7, 8, 9],
+              'colsample_bytree': (0.5, 0.9),
+              'min_child_weight': [1, 2, 3, 4],
+              'random_state':[seed]}
+
+
+'''Create a function to tune hyperparameters of the selected models.'''
+def tune_hyperparameters(model, params):
+    from sklearn.model_selection import GridSearchCV
+    global best_params, best_score
+    # Construct grid search object with 10 fold cross validation.
+    grid = GridSearchCV(model, params, verbose = 2, cv = 10, scoring = 'accuracy', n_jobs = -1)
+    # Fit using grid search.
+    grid.fit(X_train, y_train)
+    best_params, best_score = grid.best_params_, np.round(grid.best_score_*100, 2)
+    return best_params, best_score
+
+
