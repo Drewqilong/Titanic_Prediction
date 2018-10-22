@@ -8,6 +8,7 @@ Created on Sun Oct 21 12:12:34 2018
 import pandas as pd
 import IPython.display as iplay
 import Initmodel.init_utils as init
+import Optimization.opt_utils as opt
 #import matplotlib.pyplot as plt  # For 2D visualization
 #import seaborn as sns   
 #from scipy import stats          # For statistics
@@ -171,22 +172,29 @@ X_test  = df_test.drop("PassengerId", axis = 1).copy()
 #print('Test Data Dimension:     ', X_test.shape)
 
 ''' Trianing Model'''
-m = 10
+m = 100
 X_test = X_train.iloc[:m, :]
 X_train_sub = X_train.iloc[m:, :]
 Y_test = Y_train.iloc[:m,]
 Y_train_sub = Y_train.iloc[m:,]
 #X_train_sub = X_train_sub.values
 #Y_train_sub = Y_train_sub.values.reshape(Y_train_sub.shape[0], 1)
-X_train_sub = X_train_sub.T
-Y_train_sub = Y_train_sub.as_matrix().reshape(Y_train_sub.shape[0], 1).T
+X_train_sub = X_train_sub.T.values
+Y_train_sub = Y_train_sub.values.reshape(Y_train_sub.shape[0], 1).T
 X_test = X_test.T
-Y_test = Y_test.as_matrix().reshape(Y_test.shape[0], 1).T
+Y_test = Y_test.values.reshape(Y_test.shape[0], 1).T
 print(X_train_sub.shape)
 
 #X_train = X_train.T
 #Y_train = Y_train.as_matrix().reshape(Y_train.shape[0], 1).T
 
-parameters = init.model(X_train_sub, Y_train_sub)
-predict_train = init.predict(X_train_sub, Y_train_sub, parameters)
-predict_test = init.predict(X_test, Y_test, parameters)
+'''Train Initialization Model'''
+#parameters = init.model(X_train_sub, Y_train_sub)
+#predict_train = init.predict(X_train_sub, Y_train_sub, parameters)
+#predict_test = init.predict(X_test, Y_test, parameters)
+
+'''Train Optimization Model'''
+layers_dims = [X_train_sub.shape[0], 5, 2, 1]
+parameters = opt.model(X_train_sub, Y_train_sub, layers_dims, 'adam')
+predict_train = opt.predict(X_train_sub, Y_train_sub, parameters)
+predict_test = opt.predict(X_test, Y_test, parameters)
