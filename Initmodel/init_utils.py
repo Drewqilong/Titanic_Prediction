@@ -183,7 +183,7 @@ def predict(X, y, parameters):
 
     # print results
     print("Accuracy: "  + str(np.mean((p[0,:] == y[0,:]))))
-    
+#    print(a3[:, (8, 10, 17, 41)])
     return p
     
 def predict_dec(parameters, X):
@@ -250,6 +250,10 @@ def model(X, Y, learning_rate = 0.02, num_iterations = 20000, print_cost = True,
     costs = [] # to keep track of the loss
     m = X.shape[1] # number of examples
     layers_dims = [X.shape[0], 10, 5, 1]
+    
+    # Normalize X
+    from sklearn import preprocessing
+    X = preprocessing.normalize(X)
     
     # Initialize parameters dictionary.
     if initialization == "he":

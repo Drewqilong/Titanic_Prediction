@@ -12,7 +12,7 @@ import Optimization.opt_utils as opt
 #import matplotlib.pyplot as plt  # For 2D visualization
 #import seaborn as sns   
 #from scipy import stats          # For statistics
-#import numpy as np
+import numpy as np
 #import category
 #import outliers
 
@@ -173,7 +173,7 @@ X_test  = df_test.drop("PassengerId", axis = 1).copy()
 
 ''' Trianing Model'''
 m = 100
-X_test = X_train.iloc[:m, :]
+X_test = X_output = X_train.iloc[:m, :]
 X_train_sub = X_train.iloc[m:, :]
 Y_test = Y_train.iloc[:m,]
 Y_train_sub = Y_train.iloc[m:,]
@@ -181,7 +181,7 @@ Y_train_sub = Y_train.iloc[m:,]
 #Y_train_sub = Y_train_sub.values.reshape(Y_train_sub.shape[0], 1)
 X_train_sub = X_train_sub.T.values
 Y_train_sub = Y_train_sub.values.reshape(Y_train_sub.shape[0], 1).T
-X_test = X_test.T
+X_test = X_test.T.values
 Y_test = Y_test.values.reshape(Y_test.shape[0], 1).T
 print(X_train_sub.shape)
 
@@ -192,9 +192,17 @@ print(X_train_sub.shape)
 #parameters = init.model(X_train_sub, Y_train_sub)
 #predict_train = init.predict(X_train_sub, Y_train_sub, parameters)
 #predict_test = init.predict(X_test, Y_test, parameters)
+##X_test = np.append(X_test, Y_test, 0)
+##X_test = np.append(X_test, predict_test, 0)
+##df = pd.DataFrame(Y_test.T.reshape(Y_test.T.shape[0]), columns=list('Y'))
+#X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
+#X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
+##predict_certain = init.predict(X_test[:, 8].reshape(X_test.shape[0], 1), Y_test[:, 8].reshape(Y_test.shape[0], 1), parameters)
 
 '''Train Optimization Model'''
 layers_dims = [X_train_sub.shape[0], 5, 2, 1]
 parameters = opt.model(X_train_sub, Y_train_sub, layers_dims, 'adam')
 predict_train = opt.predict(X_train_sub, Y_train_sub, parameters)
 predict_test = opt.predict(X_test, Y_test, parameters)
+X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
+X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))

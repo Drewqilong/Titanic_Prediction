@@ -8,7 +8,7 @@ This is a temporary script file.
 
 import pandas as pd
 import IPython.display as iplay
-import missingno as mn           # For visualizing missing values.
+#import missingno as mn           # For visualizing missing values.
 import matplotlib.pyplot as plt  # For 2D visualization
 import seaborn as sns   
 from scipy import stats          # For statistics

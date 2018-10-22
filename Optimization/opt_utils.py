@@ -516,6 +516,11 @@ def model(X, Y, layers_dims, optimizer, learning_rate = 0.0007, mini_batch_size 
     t = 0                            # initializing the counter required for Adam update
     seed = 10                        # For grading purposes, so that your "random" minibatches are the same as ours
     
+    # Normalize X
+    from sklearn import preprocessing
+#    print(X)
+    X = preprocessing.normalize(X)
+#    print(X)
     # Initialize parameters
     parameters = initialize_parameters(layers_dims)
 
@@ -529,8 +534,8 @@ def model(X, Y, layers_dims, optimizer, learning_rate = 0.0007, mini_batch_size 
     
     # Optimization loop
     for i in range(num_epochs):
-        if i in (2000, 4000, 7000):
-            print('debug')
+#        if i in (2000, 4000, 7000):
+#            print('debug')
             
         # Define the random minibatches. We increment the seed to reshuffle differently the dataset after each epoch
         seed = seed + 1
@@ -546,8 +551,9 @@ def model(X, Y, layers_dims, optimizer, learning_rate = 0.0007, mini_batch_size 
 
             # Compute cost
             cost = compute_cost(a3, minibatch_Y)
-            if i == 2000:
-                print(cost)
+            
+#            if i == 2000:
+#                print(cost)
             # Backward propagation
             grads = backward_propagation(minibatch_X, minibatch_Y, caches)
 
