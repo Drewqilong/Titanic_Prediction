@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import tensorflow as tf
 import math
+import matplotlib.pyplot as plt  # For 2D visualization
 
 def load_dataset():
     train_dataset = h5py.File('datasets/train_signs.h5', "r")
@@ -64,7 +65,33 @@ def convert_to_one_hot(Y, C):
     Y = np.eye(C)[Y.reshape(-1)].T
     return Y
 
-def predict(X, parameters):
+#def predict(X, parameters):
+#    
+#    W1 = tf.convert_to_tensor(parameters["W1"])
+#    b1 = tf.convert_to_tensor(parameters["b1"])
+#    W2 = tf.convert_to_tensor(parameters["W2"])
+#    b2 = tf.convert_to_tensor(parameters["b2"])
+#    W3 = tf.convert_to_tensor(parameters["W3"])
+#    b3 = tf.convert_to_tensor(parameters["b3"])
+#    
+#    params = {"W1": W1,
+#              "b1": b1,
+#              "W2": W2,
+#              "b2": b2,
+#              "W3": W3,
+#              "b3": b3}
+#    
+#    x = tf.placeholder("float", [12288, 1])
+#    
+#    z3 = forward_propagation(x, params)
+#    p = tf.argmax(z3)
+#    
+#    with tf.Session() as sess:
+#        prediction = sess.run(p, feed_dict = {x: X})
+#        
+#    return prediction
+    
+def predict(X, y, parameters):
     
     W1 = tf.convert_to_tensor(parameters["W1"])
     b1 = tf.convert_to_tensor(parameters["b1"])
@@ -80,16 +107,16 @@ def predict(X, parameters):
               "W3": W3,
               "b3": b3}
     
-    x = tf.placeholder("float", [12288, 1])
+#    x = tf.placeholder("float", [12288, 1])
+    x = tf.placeholder("float", X.shape)
     
-    z3 = forward_propagation(x, params)
-    p = tf.argmax(z3)
+    a3 = forward_propagation(x, params)
     
     with tf.Session() as sess:
-        prediction = sess.run(p, feed_dict = {x: X})
-        
+        prediction = sess.run(a3, feed_dict = {x: X})
+        #        # Calculate the correct predictions
+        correct_prediction = tf.equal(tf.argmax(z3), tf.argmax(Y))
     return prediction
-    
 
 def create_placeholders(n_x, n_y):
     """
@@ -151,7 +178,7 @@ def initialize_parameters():
     return parameters
 
 
-def compute_cost(z3, Y):
+def compute_cost(a3, Y):
     """
     Computes the cost
     
@@ -163,18 +190,37 @@ def compute_cost(z3, Y):
     cost - Tensor of the cost function
     """
     
-    # to fit the tensorflow requirement for tf.nn.softmax_cross_entropy_with_logits()
-    logits = tf.transpose(z3)
-    labels = tf.transpose(Y)
     
-    ### START CODE HERE ### (1 line of code)
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = labels))
-    ### END CODE HERE ###
+    m = Y.shape[1]
+    
+    logprobs = np.multiply(-np.log(a3),Y) + np.multiply(-np.log(1 - a3), 1 - Y)
+    cost = 1./m * np.nansum(logprobs)
     
     return cost
 
 
-
+#def compute_cost(z3, Y):
+#    """
+#    Computes the cost
+#    
+#    Arguments:
+#    z3 -- output of forward propagation (output of the last LINEAR unit), of shape (10, number of examples)
+#    Y -- "true" labels vector placeholder, same shape as z3
+#    
+#    Returns:
+#    cost - Tensor of the cost function
+#    """
+#    
+#    # to fit the tensorflow requirement for tf.nn.softmax_cross_entropy_with_logits()
+#    logits = tf.transpose(z3)
+#    labels = tf.transpose(Y)
+#    
+#    ## START CODE HERE ### (1 line of code)
+#    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = labels))
+#    ## END CODE HERE ###
+#    
+#    
+#    return cost
 
 
 
@@ -217,12 +263,12 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
     
     # Forward propagation: Build the forward propagation in the tensorflow graph
     ### START CODE HERE ### (1 line)
-    z3 = forward_propagation(X, parameters)
+    a3 = forward_propagation(X, parameters)
     ### END CODE HERE ###
     
     # Cost function: Add cost function to tensorflow graph
     ### START CODE HERE ### (1 line)
-    cost = compute_cost(z3, Y)
+    cost = compute_cost(a3, Y)
     ### END CODE HERE ###
     
     # Backpropagation: Define the tensorflow optimizer. Use an AdamOptimizer.
@@ -275,15 +321,50 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
 
         # lets save the parameters in a variable
         parameters = sess.run(parameters)
-        print ("Parameters have been trained!")
-
-        # Calculate the correct predictions
-        correct_prediction = tf.equal(tf.argmax(z3), tf.argmax(Y))
-
-        # Calculate accuracy on the test set
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-
-        print ("Train Accuracy:", accuracy.eval({X: X_train, Y: Y_train}))
-        print ("Test Accuracy:", accuracy.eval({X: X_test, Y: Y_test}))
+#        print ("Parameters have been trained!")
+#
+#        # Calculate the correct predictions
+#        correct_prediction = tf.equal(tf.argmax(z3), tf.argmax(Y))
+#
+#        # Calculate accuracy on the test set
+#        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+#
+#        print ("Train Accuracy:", accuracy.eval({X: X_train, Y: Y_train}))
+#        print ("Test Accuracy:", accuracy.eval({X: X_test, Y: Y_test}))
         
         return parameters
+    
+    # GRADED FUNCTION: forward_propagation
+
+def forward_propagation(X, parameters):
+    """
+    Implements the forward propagation for the model: LINEAR -> RELU -> LINEAR -> RELU -> LINEAR -> SOFTMAX
+    
+    Arguments:
+    X -- input dataset placeholder, of shape (input size, number of examples)
+    parameters -- python dictionary containing your parameters "W1", "b1", "W2", "b2", "W3", "b3"
+                  the shapes are given in initialize_parameters
+
+    Returns:
+    Z3 -- the output of the last LINEAR unit
+    """
+    
+    # Retrieve the parameters from the dictionary "parameters" 
+    W1 = parameters['W1']
+    b1 = parameters['b1']
+    W2 = parameters['W2']
+    b2 = parameters['b2']
+    W3 = parameters['W3']
+    b3 = parameters['b3']
+    
+    ### START CODE HERE ### (approx. 5 lines)              # Numpy Equivalents:
+    Z1 = tf.add(tf.matmul(W1, X), b1)                                              # Z1 = np.dot(W1, X) + b1
+    A1 = tf.nn.relu(Z1)                                              # A1 = relu(Z1)
+    Z2 = tf.add(tf.matmul(W2, A1), b2)                                              # Z2 = np.dot(W2, a1) + b2
+    A2 = tf.nn.relu(Z2)                                              # A2 = relu(Z2)
+    Z3 = tf.add(tf.matmul(W3, A2), b3)                                              # Z3 = np.dot(W3,Z2) + b3
+    # compute sigmoid(x)
+    A3 = tf.sigmoid(Z3)
+    ### END CODE HERE ###
+    
+    return A3
