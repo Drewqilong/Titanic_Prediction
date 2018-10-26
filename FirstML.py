@@ -10,6 +10,7 @@ import IPython.display as iplay
 import Initmodel.init_utils as init
 import Optimization.opt_utils as opt
 import Regularization.reg_utils as reg
+import improv_t as improv
 #import matplotlib.pyplot as plt  # For 2D visualization
 #import seaborn as sns   
 #from scipy import stats          # For statistics
@@ -218,8 +219,11 @@ If  λλ  is too large, it is also possible to "oversmooth", resulting in a mode
 #X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
 #X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
 
-parameters = reg.model(X_train_sub, Y_train_sub, lambd = 0.7, keep_prob = 0.7, num_iterations = 30000)
-predict_train = reg.predict(X_train_sub, Y_train_sub, parameters)
-predict_test = reg.predict(X_test, Y_test, parameters)
-X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
-X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
+#parameters = reg.model(X_train_sub, Y_train_sub, lambd = 0.7, keep_prob = 0.7, num_iterations = 30000)
+#predict_train = reg.predict(X_train_sub, Y_train_sub, parameters)
+#predict_test = reg.predict(X_test, Y_test, parameters)
+#X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
+#X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
+
+
+parameters = improv.model(X_train_sub, Y_train_sub, X_test, Y_test)

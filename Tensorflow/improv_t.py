@@ -91,7 +91,7 @@ def convert_to_one_hot(Y, C):
 #        
 #    return prediction
     
-def predict(X, y, parameters):
+def predict(X, parameters):
     
     W1 = tf.convert_to_tensor(parameters["W1"])
     b1 = tf.convert_to_tensor(parameters["b1"])
@@ -114,8 +114,7 @@ def predict(X, y, parameters):
     
     with tf.Session() as sess:
         prediction = sess.run(a3, feed_dict = {x: X})
-        #        # Calculate the correct predictions
-        correct_prediction = tf.equal(tf.argmax(z3), tf.argmax(Y))
+        
     return prediction
 
 def create_placeholders(n_x, n_y):
@@ -143,7 +142,7 @@ def create_placeholders(n_x, n_y):
     return X, Y
 
 
-def initialize_parameters():
+def initialize_parameters(n_x):
     """
     Initializes parameters to build a neural network with tensorflow. The shapes are:
                         W1 : [25, 12288]
@@ -160,12 +159,12 @@ def initialize_parameters():
     tf.set_random_seed(1)                              # so that your "random" numbers match ours
         
     ### START CODE HERE ### (approx. 6 lines of code)
-    W1 = tf.get_variable("W1", [25,12288], initializer = tf.contrib.layers.xavier_initializer(seed = 1))
+    W1 = tf.get_variable("W1", [25,n_x], initializer = tf.contrib.layers.xavier_initializer(seed = 1))
     b1 = tf.get_variable("b1", [25,1], initializer = tf.zeros_initializer())
     W2 = tf.get_variable("W2", [12,25], initializer = tf.contrib.layers.xavier_initializer(seed = 1))
     b2 = tf.get_variable("b2", [12,1], initializer = tf.zeros_initializer())
-    W3 = tf.get_variable("W3", [6,12], initializer = tf.contrib.layers.xavier_initializer(seed = 1))
-    b3 = tf.get_variable("b3", [6,1], initializer = tf.zeros_initializer())
+    W3 = tf.get_variable("W3", [1,12], initializer = tf.contrib.layers.xavier_initializer(seed = 1))
+    b3 = tf.get_variable("b3", [1,1], initializer = tf.zeros_initializer())
     ### END CODE HERE ###
 
     parameters = {"W1": W1,
@@ -178,7 +177,7 @@ def initialize_parameters():
     return parameters
 
 
-def compute_cost(a3, Y):
+def compute_cost(Z, Y):
     """
     Computes the cost
     
@@ -190,11 +189,12 @@ def compute_cost(a3, Y):
     cost - Tensor of the cost function
     """
     
+    # Create the placeholders for "logits" (z) and "labels" (y) (approx. 2 lines)
+    Z = tf.placeholder(tf.float32, Z.shape, name = "Z")
+    Y = tf.placeholder(tf.float32, Y.shape, name = "Y")
     
-    m = Y.shape[1]
-    
-    logprobs = np.multiply(-np.log(a3),Y) + np.multiply(-np.log(1 - a3), 1 - Y)
-    cost = 1./m * np.nansum(logprobs)
+    # Use the loss function (approx. 1 line)
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z, labels = Y))
     
     return cost
 
@@ -244,7 +244,7 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
     parameters -- parameters learnt by the model. They can then be used to predict.
     """
     
-    ops.reset_default_graph()                         # to be able to rerun the model without overwriting tf variables
+#    ops.reset_default_graph()                         # to be able to rerun the model without overwriting tf variables
     tf.set_random_seed(1)                             # to keep consistent results
     seed = 3                                          # to keep consistent results
     (n_x, m) = X_train.shape                          # (n_x: input size, m : number of examples in the train set)
@@ -258,17 +258,17 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
 
     # Initialize parameters
     ### START CODE HERE ### (1 line)
-    parameters = initialize_parameters()
+    parameters = initialize_parameters(n_x)
     ### END CODE HERE ###
     
     # Forward propagation: Build the forward propagation in the tensorflow graph
     ### START CODE HERE ### (1 line)
-    a3 = forward_propagation(X, parameters)
+    z3 = forward_propagation(X, parameters)
     ### END CODE HERE ###
     
     # Cost function: Add cost function to tensorflow graph
     ### START CODE HERE ### (1 line)
-    cost = compute_cost(a3, Y)
+    cost = compute_cost(z3, Y)
     ### END CODE HERE ###
     
     # Backpropagation: Define the tensorflow optimizer. Use an AdamOptimizer.
@@ -331,7 +331,16 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
 #
 #        print ("Train Accuracy:", accuracy.eval({X: X_train, Y: Y_train}))
 #        print ("Test Accuracy:", accuracy.eval({X: X_test, Y: Y_test}))
-        
+       
+
+        # Calculate the correct predictions
+        correct_prediction = tf.equal(tf.round(z3), Y)
+
+        # Calculate accuracy on the test set
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+        print ("Train Accuracy:", accuracy.eval({X: X_train, Y: Y_train}))
+        print ("Test Accuracy:", accuracy.eval({X: X_test, Y: Y_test}))
         return parameters
     
     # GRADED FUNCTION: forward_propagation
@@ -364,7 +373,7 @@ def forward_propagation(X, parameters):
     A2 = tf.nn.relu(Z2)                                              # A2 = relu(Z2)
     Z3 = tf.add(tf.matmul(W3, A2), b3)                                              # Z3 = np.dot(W3,Z2) + b3
     # compute sigmoid(x)
-    A3 = tf.sigmoid(Z3)
+#    A3 = tf.sigmoid(Z3)
     ### END CODE HERE ###
     
-    return A3
+    return Z3
