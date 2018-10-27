@@ -189,9 +189,9 @@ def compute_cost(Z, Y):
     cost - Tensor of the cost function
     """
     
-    # Create the placeholders for "logits" (z) and "labels" (y) (approx. 2 lines)
-    Z = tf.placeholder(tf.float32, Z.shape, name = "Z")
-    Y = tf.placeholder(tf.float32, Y.shape, name = "Y")
+#    # Create the placeholders for "logits" (z) and "labels" (y) (approx. 2 lines)
+#    Z = tf.placeholder(tf.float32, Z.shape, name = "Z")
+#    Y = tf.placeholder(tf.float32, Y.shape, name = "Y")
     
     # Use the loss function (approx. 1 line)
     cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z, labels = Y))
@@ -251,6 +251,11 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
     n_y = Y_train.shape[0]                                  # n_y : output size
     costs = []                                        # To keep track of the cost
     
+        # Normalize X
+    from sklearn import preprocessing
+#    print(X)
+    X_train = preprocessing.normalize(X_train)
+    
     # Create Placeholders of shape (n_x, n_y)
     ### START CODE HERE ### (1 line)
     X, Y = create_placeholders(n_x, n_y)
@@ -274,6 +279,7 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
     # Backpropagation: Define the tensorflow optimizer. Use an AdamOptimizer.
     ### START CODE HERE ### (1 line)
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(cost)
+#    optimizer = tf.train.GradientDescentOptimizer(learning_rate = learning_rate).minimize(cost)
     ### END CODE HERE ###
     
     # Initialize all the variables
@@ -334,7 +340,8 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
        
 
         # Calculate the correct predictions
-        correct_prediction = tf.equal(tf.round(z3), Y)
+        a3 = tf.sigmoid(z3)
+        correct_prediction = tf.equal(tf.round(a3), Y)
 
         # Calculate accuracy on the test set
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
@@ -366,11 +373,26 @@ def forward_propagation(X, parameters):
     W3 = parameters['W3']
     b3 = parameters['b3']
     
+    # Small epsilon value for the BN transform
+    epsilon = 1e-3
+
     ### START CODE HERE ### (approx. 5 lines)              # Numpy Equivalents:
     Z1 = tf.add(tf.matmul(W1, X), b1)                                              # Z1 = np.dot(W1, X) + b1
-    A1 = tf.nn.relu(Z1)                                              # A1 = relu(Z1)
+    #normalize L2
+    batch_mean1, batch_var1 = tf.nn.moments(Z1,[0])
+    scale1 = tf.Variable(tf.ones(W1.shape[0]))
+    beta1 = tf.Variable(tf.zeros(W1.shape[0]))
+    BN1 = tf.nn.batch_normalization(Z1,batch_mean1,batch_var1,beta1,scale1,epsilon)
+    
+    A1 = tf.nn.relu(BN1)                                              # A1 = relu(Z1)
     Z2 = tf.add(tf.matmul(W2, A1), b2)                                              # Z2 = np.dot(W2, a1) + b2
-    A2 = tf.nn.relu(Z2)                                              # A2 = relu(Z2)
+    #normalize L2
+    batch_mean2, batch_var2 = tf.nn.moments(Z2,[0])
+    scale2 = tf.Variable(tf.ones(W2.shape[0]))
+    beta2 = tf.Variable(tf.zeros(W2.shape[0]))
+    print(Z2.shape)
+    BN2 = tf.nn.batch_normalization(Z2,batch_mean2,batch_var2,beta2,scale2,epsilon)
+    A2 = tf.nn.relu(BN2)                                              # A2 = relu(Z2)
     Z3 = tf.add(tf.matmul(W3, A2), b3)                                              # Z3 = np.dot(W3,Z2) + b3
     # compute sigmoid(x)
 #    A3 = tf.sigmoid(Z3)
