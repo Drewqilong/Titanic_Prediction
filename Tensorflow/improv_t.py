@@ -380,16 +380,16 @@ def forward_propagation(X, parameters):
     Z1 = tf.add(tf.matmul(W1, X), b1)                                              # Z1 = np.dot(W1, X) + b1
     #normalize L2
     batch_mean1, batch_var1 = tf.nn.moments(Z1,[0])
-    scale1 = tf.Variable(tf.ones(W1.shape[0]))
-    beta1 = tf.Variable(tf.zeros(W1.shape[0]))
+    scale1 = tf.Variable(tf.ones(W1.shape[1]))
+    beta1 = tf.Variable(tf.zeros(W1.shape[1]))
     BN1 = tf.nn.batch_normalization(Z1,batch_mean1,batch_var1,beta1,scale1,epsilon)
     
     A1 = tf.nn.relu(BN1)                                              # A1 = relu(Z1)
     Z2 = tf.add(tf.matmul(W2, A1), b2)                                              # Z2 = np.dot(W2, a1) + b2
     #normalize L2
     batch_mean2, batch_var2 = tf.nn.moments(Z2,[0])
-    scale2 = tf.Variable(tf.ones(W2.shape[0]))
-    beta2 = tf.Variable(tf.zeros(W2.shape[0]))
+    scale2 = tf.Variable(tf.ones(W2.shape[1]))
+    beta2 = tf.Variable(tf.zeros(W2.shape[1]))
     print(Z2.shape)
     BN2 = tf.nn.batch_normalization(Z2,batch_mean2,batch_var2,beta2,scale2,epsilon)
     A2 = tf.nn.relu(BN2)                                              # A2 = relu(Z2)

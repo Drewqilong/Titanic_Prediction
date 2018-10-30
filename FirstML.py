@@ -10,7 +10,7 @@ import IPython.display as iplay
 import Initmodel.init_utils as init
 import Optimization.opt_utils as opt
 import Regularization.reg_utils as reg
-import improv_t as improv
+#import improv_t as improv
 #import matplotlib.pyplot as plt  # For 2D visualization
 #import seaborn as sns   
 #from scipy import stats          # For statistics
@@ -90,10 +90,11 @@ merged.Age = merged.groupby(['Title', 'Pclass'])['Age'].transform(lambda x: x.fi
 #iplay.display(merged.isnull().sum())
 
 """Let's split the train and test data for bivariate analysis since test data has no Survived values. We need our target variable without missing values to conduct the association test with predictor variables."""
-df_train = merged.iloc[:891, :]
+df_train = X_output = merged.iloc[:891, :]
 df_test = merged.iloc[891:, :]
 df_test = df_test.drop(columns = ['Survived'], axis = 1)
 
+ 
 
 '''Data Transformation '''
 '''Create bin categories for Age.'''
@@ -174,8 +175,17 @@ X_test  = df_test.drop("PassengerId", axis = 1).copy()
 #print('Test Data Dimension:     ', X_test.shape)
 
 ''' Trianing Model'''
+    # Shuffle (X_train, Y_train)
+import time
+np.random.seed(int(time.time()))
+permutation = list(np.random.permutation(X_train.shape[0]))
+X_train = X_train.loc[permutation, :].reset_index(drop=True)
+Y_train = Y_train.loc[permutation,].reset_index(drop=True)
+X_output = X_output.loc[permutation, :].reset_index(drop=True)
+
+
 m = 100
-X_test = X_output = X_train.iloc[:m, :]
+X_test = X_train.iloc[:m, :]
 X_train_sub = X_train.iloc[m:, :]
 Y_test = Y_train.iloc[:m,]
 Y_train_sub = Y_train.iloc[m:,]
@@ -213,11 +223,11 @@ print(X_train_sub.shape)
 '''Trian Regularization Model'''
 '''L2 regularization makes your decision boundary smoother. 
 If  λλ  is too large, it is also possible to "oversmooth", resulting in a model with high bias.'''
-#parameters = reg.model(X_train_sub, Y_train_sub, lambd = 0.7)
-#predict_train = reg.predict(X_train_sub, Y_train_sub, parameters)
-#predict_test = reg.predict(X_test, Y_test, parameters)
-#X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
-#X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
+parameters = reg.model(X_train_sub, Y_train_sub, keep_prob = 0.7)
+predict_train = reg.predict(X_train_sub, Y_train_sub, parameters)
+predict_test = reg.predict(X_test, Y_test, parameters)
+X_output['Y'] = pd.Series(Y_test.T.reshape(Y_test.T.shape[0]))
+X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
 
 #parameters = reg.model(X_train_sub, Y_train_sub, lambd = 0.7, keep_prob = 0.7, num_iterations = 30000)
 #predict_train = reg.predict(X_train_sub, Y_train_sub, parameters)
@@ -226,4 +236,12 @@ If  λλ  is too large, it is also possible to "oversmooth", resulting in a mode
 #X_output['Predict'] = pd.Series(predict_test.T.reshape(predict_test.shape[1]))
 
 
-parameters = improv.model(X_train_sub, Y_train_sub, X_test, Y_test)
+
+
+writer = pd.ExcelWriter('output.xlsx')
+X_output.to_excel(writer,'Sheet1')
+writer.save()
+
+
+'''Tensorflow'''
+#parameters = improv.model(X_train_sub, Y_train_sub, X_test, Y_test)
