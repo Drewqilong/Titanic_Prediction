@@ -10,7 +10,7 @@ import IPython.display as iplay
 import Initmodel.init_utils as init
 import Optimization.opt_utils as opt
 import Regularization.reg_utils as reg
-#import improv_t as improv
+#import Tensorflow.improv_t as improv
 #import matplotlib.pyplot as plt  # For 2D visualization
 #import seaborn as sns   
 #from scipy import stats          # For statistics
